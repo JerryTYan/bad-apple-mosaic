@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import filedialog
-from PIL import Image, ImageTk
+from PIL import Image
+import os
 
 def selectFileHandler():
     file_path = filedialog.askopenfilename(initialdir="/", title="Select An Image", filetypes=[('png files','*.png'),('jpg files','*.jpg'),('jpeg files','*.jpeg')])
@@ -12,10 +13,23 @@ def selectFileHandler():
         
         ctkImg = ctk.CTkImage(light_image=img, size=(200,200))
         imgLbl = ctk.CTkLabel(master=app, image=ctkImg, anchor="center", text="")
-        imgLbl.grid(row=1, column=0, columnspan=3, pady=10)                  
+        imgLbl.grid(row=1, column=0, columnspan=3, pady=10)
+        
+        global selected_img_path, selected_img_extension
+        selected_img_path, selected_img_extension = os.path.splitext(file_path)
     
 def uploadFileHandler():
-    print("Nice")
+    save_dir = "assets/uploads"
+    os.makedirs(save_dir, exist_ok=True)
+    
+    save_file_name = f"upload{selected_img_extension}"
+    save_path = os.path.join(save_dir, save_file_name)
+    
+    try:
+        img = Image.open(selected_img_path + selected_img_extension)
+        img.save(save_path)
+    except Exception as e:
+        print(f"Error saving the image: {e}")
 
 # customtkinter window for image upload
 app = ctk.CTk()
@@ -32,7 +46,7 @@ app.grid_rowconfigure(1, weight=3)
 titleLbl = ctk.CTkLabel(master=app, text="Bad Appleify Any Image!", font=("Segoe UI", 20, "bold"), anchor="center")
 titleLbl.grid(row=0, column=0, columnspan=3, pady=10, sticky="ew")
 
-ctkImg = ctk.CTkImage(light_image=Image.open("badApple.jpg"), size=(200,200))
+ctkImg = ctk.CTkImage(light_image=Image.open("assets/badApple.jpg"), size=(200,200))
 imgLbl = ctk.CTkLabel(master=app, image=ctkImg, anchor="center", text="")
 imgLbl.grid(row=1, column=0, columnspan=3, pady=10)       
 
