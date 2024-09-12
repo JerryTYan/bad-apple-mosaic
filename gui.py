@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from tkinter import filedialog
+from tkinter import filedialog, PhotoImage
 from PIL import Image
 import os
 
@@ -8,7 +8,7 @@ def selectFileHandler():
     if file_path:
         fileNameLbl.configure(text=file_path)
         
-        img = Image.open(file_path) #Returns Image object from file_path
+        img = Image.open(file_path)
         img.thumbnail((200,200))
         
         ctkImg = ctk.CTkImage(light_image=img, size=(200,200))
@@ -22,12 +22,13 @@ def uploadFileHandler():
     save_dir = "assets/uploads"
     os.makedirs(save_dir, exist_ok=True)
     
-    save_file_name = f"upload{selected_img_extension}"
-    save_path = os.path.join(save_dir, save_file_name)
-    
     try:
+        save_file_name = f"upload{selected_img_extension}"
+        save_path = os.path.join(save_dir, save_file_name)
         img = Image.open(selected_img_path + selected_img_extension)
         img.save(save_path)
+    except NameError:
+        print("No valid file was selected")
     except Exception as e:
         print(f"Error saving the image: {e}")
 
@@ -35,6 +36,7 @@ def uploadFileHandler():
 app = ctk.CTk()
 app.title("Bad Appleify")
 app.config(padx=50,pady=50)
+app.iconbitmap("assets/badApple.ico")
 
 ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")
@@ -46,7 +48,7 @@ app.grid_rowconfigure(1, weight=3)
 titleLbl = ctk.CTkLabel(master=app, text="Bad Appleify Any Image!", font=("Segoe UI", 20, "bold"), anchor="center")
 titleLbl.grid(row=0, column=0, columnspan=3, pady=10, sticky="ew")
 
-ctkImg = ctk.CTkImage(light_image=Image.open("assets/badApple.jpg"), size=(200,200))
+ctkImg = ctk.CTkImage(light_image=Image.open("assets/badApple.png"), size=(200,200))
 imgLbl = ctk.CTkLabel(master=app, image=ctkImg, anchor="center", text="")
 imgLbl.grid(row=1, column=0, columnspan=3, pady=10)       
 
@@ -59,6 +61,6 @@ imgReqLbl = ctk.CTkLabel(master=app, text="*Your file must be a .png, .jpg, or .
 imgReqLbl.grid(row=3, column=0, columnspan=3, pady=10, sticky="ew")
 
 uploadBtn = ctk.CTkButton(master=app, text="Upload", border_width=1, border_color="#dfe6e9", fg_color="#6c5ce7", hover_color="#5f27cd", command=uploadFileHandler)
-uploadBtn.grid(row=4, column=1, pady=10, sticky="ew")
+uploadBtn.grid(row=4, column=0, columnspan=3, pady=10)
 
 app.mainloop()
