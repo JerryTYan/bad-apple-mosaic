@@ -2,6 +2,7 @@ import customtkinter as ctk
 from tkinter import filedialog, PhotoImage
 from PIL import Image
 import os
+import subprocess
 
 def selectFileHandler():
     # Open file dialog to select an image
@@ -46,6 +47,12 @@ def uploadFileHandler():
     except Exception as e:
         # General error handling for any issue during file saving
         print(f"Error saving the image: {e}")
+    
+    # Execute video_generator.py script
+    try:
+        subprocess.run(["python", "video_generator.py"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while running video_generator.py: {e}")
 
 # Setup the customtkinter app window
 app = ctk.CTk()
