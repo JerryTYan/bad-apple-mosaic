@@ -1,4 +1,5 @@
 #ffmpeg -i bad_apple@2160p60fps.mp4 -vf "scale=72:54" bad_apple@72p60fps.mp4
+#ffmpeg -i bad_apple@2160p60fps.mp4 bad_apple.mp3
 
 import cv2 as cv
 import os
