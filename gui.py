@@ -37,6 +37,9 @@ def uploadFileHandler():
         # Save the image in the specified directory
         img = Image.open(selected_img_path + selected_img_extension)
         img.save(save_path)
+        resized_img = img.resize((40, 40))
+        resized_img.save(os.path.join(save_dir, "40x40_" + save_file_name))
+        
     except NameError:
         # Error handling in case no file was selected
         print("No valid file was selected")
