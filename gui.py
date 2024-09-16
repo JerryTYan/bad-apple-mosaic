@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from tkinter import filedialog, PhotoImage
-from PIL import Image
+from PIL import Image, ImageOps, ImageEnhance
 import os
 import subprocess
 
@@ -31,28 +31,37 @@ def uploadFileHandler():
     os.makedirs(save_dir, exist_ok=True)
     
     try:
-        # Define the save path for the uploaded file
-        save_file_name = f"upload{selected_img_extension}"
+        # Define the save path for the uploaded file (converted to PNG)
+        save_file_name = f"upload.png"
         save_path = os.path.join(save_dir, save_file_name)
-        
-        # Save the image in the specified directory
+
+        # Open the uploaded image
         img = Image.open(selected_img_path + selected_img_extension)
-        img.save(save_path)
+
+        # Convert and save the image as PNG
+        img.save(save_path, "PNG")
+
+        # Resize the image to 40x40 and save it
         resized_img = img.resize((40, 40))
-        resized_img.save(os.path.join(save_dir, "40x40_" + save_file_name))
-        
+        resized_img.save(os.path.join(save_dir, "40x40_upload.png"))
+
+        # Convert the resized image to grayscale, enhance contrast and brightness, and save it
+        gray_img = ImageOps.grayscale(resized_img)
+        enhanced_img = ImageEnhance.Contrast(gray_img).enhance(1.5)
+        enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.5)
+        enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.png"))
+
+        # Execute the video_generator.py script
+        subprocess.run(["python", "video_generator.py"], check=True)
+
     except NameError:
         # Error handling in case no file was selected
         print("No valid file was selected")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while running video_generator.py: {e}")
     except Exception as e:
         # General error handling for any issue during file saving
         print(f"Error saving the image: {e}")
-    
-    # Execute video_generator.py script
-    try:
-        subprocess.run(["python", "video_generator.py"], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred while running video_generator.py: {e}")
 
 # Setup the customtkinter app window
 app = ctk.CTk()
