@@ -1,74 +1,69 @@
-from PIL import Image
-import pickle
+import cv2 as cv
+import numpy as np
 import os
 import time
+import pickle
 import multiprocessing as mp
-from collections import OrderedDict
-from bitarray import bitarray
 
 output_dir = "assets/processed_frames"
 os.makedirs(output_dir, exist_ok=True)
 
-# Load user images
-user_img = Image.open("assets/uploads/40x40_upload.png").convert('RGBA')
-gray_user_img = Image.open("assets/uploads/gray_40x40_upload.png").convert('RGBA')
+# Load images as NumPy arrays using OpenCV
+def load_image_as_cv_array(path):
+    return cv.resize(cv.imread(path), (40, 40))
 
-# Load pixel data (bitarray for each frame)
+# Load pixel data
 with open('pixel_data.pkl', 'rb') as file:
     pixel_data = pickle.load(file)
 
-# Constants for frame size and tile size
+# Constants
 FRAME_WIDTH = 2880
 FRAME_HEIGHT = 2160
 TILE_SIZE = 40
 
-# Function to generate a single frame
-def generate_frame(frame_info):
+# Function to generate frames using OpenCV
+def generate_frame(frame_info, user_img_array, gray_user_img_array, blank_frame_array):
     key, value = frame_info
+    frame_number = f"frame_{int(key):05d}.webp"  # Use .webp extension
     
-    # Open a blank 4K frame for modification
-    blank_frame = Image.open("assets/4k_blank_frame.png").convert('RGBA')
-    frame_number = f"frame_{int(key):05d}.png"
-    
-    # Initialize new position values for each frame
+    # Copy the blank frame
+    frame_array = blank_frame_array.copy()
+
+    # Initialize new position values
     posx, posy = 0, 0
     
-    # Edit blank frame
     for pixel in value:
-        position = (posx, posy)
+        # If white, paste the user image; if black, paste the gray image
+        if pixel == 1:
+            frame_array[posy:posy+TILE_SIZE, posx:posx+TILE_SIZE] = user_img_array
+        else:
+            frame_array[posy:posy+TILE_SIZE, posx:posx+TILE_SIZE] = gray_user_img_array
 
-        # Place the user image on white pixels
-        if pixel == 1:  # white
-            blank_frame.paste(user_img, position, user_img)
-            
-        else: # black
-            blank_frame.paste(gray_user_img, position, gray_user_img)
-        
         # Move to the next tile position
         posx += TILE_SIZE
-
-        # End of row: reset x and move down to the next row
         if posx >= FRAME_WIDTH:
             posx = 0
             posy += TILE_SIZE
-        
-        # End of frame: stop if the bottom of the frame is reached
         if posy >= FRAME_HEIGHT:
             break
     
-    # Save the processed frame
-    blank_frame.save(os.path.join(output_dir, frame_number))
+    # Save the frame as WebP using OpenCV
+    cv.imwrite(os.path.join(output_dir, frame_number), frame_array, [cv.IMWRITE_WEBP_QUALITY, 100])
 
-# Start multi-processing
+# Multiprocessing setup
 if __name__ == "__main__":
     start_time = time.time()
     
-    # Create a pool of workers (number of processes = number of CPU cores)
+    # Load user images and convert them to NumPy arrays using OpenCV
+    user_img_array = load_image_as_cv_array("assets/uploads/40x40_upload.webp")
+    gray_user_img_array = load_image_as_cv_array("assets/uploads/gray_40x40_upload.webp")
+    
+    # Create a blank frame (3 channels for RGB)
+    blank_frame_array = np.zeros((FRAME_HEIGHT, FRAME_WIDTH, 3), dtype=np.uint8)
+
+    # Parallel frame generation
     with mp.Pool(mp.cpu_count()) as pool:
-        # Map the frame generation function to each frame in the pixel data
-        pool.map(generate_frame, pixel_data.items())
+        pool.starmap(generate_frame, [(frame_info, user_img_array, gray_user_img_array, blank_frame_array) for frame_info in pixel_data.items()])
     
     end_time = time.time()
-    
-    total_time = end_time - start_time
-    print(f"Frame generation complete in {total_time:.2f} seconds.")
+    print(f"Frame generation complete in {end_time - start_time:.2f} seconds.")

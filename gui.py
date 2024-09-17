@@ -6,14 +6,14 @@ import subprocess
 
 def selectFileHandler():
     # Open file dialog to select an image
-    file_path = filedialog.askopenfilename(initialdir="/", title="Select An Image", filetypes=[('png files','*.png'),('jpg files','*.jpg'),('jpeg files','*.jpeg')])
+    file_path = filedialog.askopenfilename(initialdir="/", title="Select An Image", filetypes=[('png files','*.png'),('jpg files','*.jpg'),('jpeg files','*.jpeg'), ('webp files','*.webp')])
     
     if file_path:
         # Display selected file path in the label
         fileNameLbl.configure(text=file_path)
         
         # Open and create a thumbnail for display in the GUI
-        img = Image.open(file_path)
+        img = Image.open(file_path).convert('RGB')  # Convert to RGB to remove alpha channel
         img.thumbnail((200,200))
         
         # Convert to customtkinter image format and display it
@@ -31,25 +31,25 @@ def uploadFileHandler():
     os.makedirs(save_dir, exist_ok=True)
     
     try:
-        # Define the save path for the uploaded file (converted to PNG)
-        save_file_name = f"upload.png"
+        # Define the save path for the uploaded file (converted to WebP, lossless)
+        save_file_name = f"upload.webp"
         save_path = os.path.join(save_dir, save_file_name)
 
-        # Open the uploaded image
-        img = Image.open(selected_img_path + selected_img_extension)
+        # Open the uploaded image and convert to RGB to remove alpha channel
+        img = Image.open(selected_img_path + selected_img_extension).convert('RGB')
 
-        # Convert and save the image as PNG
-        img.save(save_path, "PNG")
+        # Convert and save the image as WebP (lossless)
+        img.save(save_path, "WEBP", lossless=True)
 
-        # Resize the image to 40x40 and save it
+        # Resize the image to 40x40, remove alpha channel, and save it as WebP (lossless)
         resized_img = img.resize((40, 40))
-        resized_img.save(os.path.join(save_dir, "40x40_upload.png"))
+        resized_img.save(os.path.join(save_dir, "40x40_upload.webp"), "WEBP", lossless=True)
 
         # Convert the resized image to grayscale, enhance contrast and brightness, and save it
         gray_img = ImageOps.grayscale(resized_img)
         enhanced_img = ImageEnhance.Contrast(gray_img).enhance(2.0)
         enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.25)
-        enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.png"))
+        enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.webp"), "WEBP", lossless=True)
 
         # Execute the video_generator.py script
         subprocess.run(["python", "video_generator.py"], check=True)
@@ -96,7 +96,7 @@ fileNameLbl = ctk.CTkLabel(master=app, text="No file selected", fg_color="#636e7
 fileNameLbl.grid(row=2, column=1, columnspan=2, pady=10, sticky="ew")
 
 # Instruction label for the image requirements
-imgReqLbl = ctk.CTkLabel(master=app, text="*Your file must be a .png, .jpg, or .jpeg.", anchor="center")
+imgReqLbl = ctk.CTkLabel(master=app, text="*Your file must be a .webp, .png, .jpg, or .jpeg.", anchor="center")
 imgReqLbl.grid(row=3, column=0, columnspan=3, pady=10, sticky="ew")
 
 # Add an upload button to save the selected image
