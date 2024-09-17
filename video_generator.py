@@ -62,7 +62,7 @@ if __name__ == "__main__":
     blank_frame_array = np.zeros((FRAME_HEIGHT, FRAME_WIDTH, 3), dtype=np.uint8)
 
     # Parallel frame generation
-    with mp.Pool(mp.cpu_count()) as pool:
+    with mp.Pool(max(2, mp.cpu_count() - 2)) as pool:
         pool.starmap(generate_frame, [(frame_info, user_img_array, gray_user_img_array, blank_frame_array) for frame_info in pixel_data.items()])
     
     end_time = time.time()
