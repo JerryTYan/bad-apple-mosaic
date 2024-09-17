@@ -24,7 +24,7 @@ TILE_SIZE = 40
 # Function to generate frames using OpenCV
 def generate_frame(frame_info, user_img_array, gray_user_img_array, blank_frame_array):
     key, value = frame_info
-    frame_number = f"frame_{int(key):05d}.webp"  # Use .webp extension
+    frame_number = f"frame_{int(key):05d}.png"  # Use .png extension
     
     # Copy the blank frame
     frame_array = blank_frame_array.copy()
@@ -47,16 +47,16 @@ def generate_frame(frame_info, user_img_array, gray_user_img_array, blank_frame_
         if posy >= FRAME_HEIGHT:
             break
     
-    # Save the frame as WebP using OpenCV
-    cv.imwrite(os.path.join(output_dir, frame_number), frame_array, [cv.IMWRITE_WEBP_QUALITY, 100])
+    # Save the frame as PNG using OpenCV
+    cv.imwrite(os.path.join(output_dir, frame_number), frame_array, [cv.IMWRITE_PNG_COMPRESSION, 1])
 
 # Multiprocessing setup
 if __name__ == "__main__":
     start_time = time.time()
     
     # Load user images and convert them to NumPy arrays using OpenCV
-    user_img_array = load_image_as_cv_array("assets/uploads/40x40_upload.webp")
-    gray_user_img_array = load_image_as_cv_array("assets/uploads/gray_40x40_upload.webp")
+    user_img_array = load_image_as_cv_array("assets/uploads/40x40_upload.png")
+    gray_user_img_array = load_image_as_cv_array("assets/uploads/gray_40x40_upload.png")
     
     # Create a blank frame (3 channels for RGB)
     blank_frame_array = np.zeros((FRAME_HEIGHT, FRAME_WIDTH, 3), dtype=np.uint8)

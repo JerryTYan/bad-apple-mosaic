@@ -31,25 +31,25 @@ def uploadFileHandler():
     os.makedirs(save_dir, exist_ok=True)
     
     try:
-        # Define the save path for the uploaded file (converted to WebP, lossless)
-        save_file_name = f"upload.webp"
+        # Define the save path for the uploaded file (converted to PNG)
+        save_file_name = f"upload.png"
         save_path = os.path.join(save_dir, save_file_name)
 
         # Open the uploaded image and convert to RGB to remove alpha channel
         img = Image.open(selected_img_path + selected_img_extension).convert('RGB')
 
-        # Convert and save the image as WebP (lossless)
-        img.save(save_path, "WEBP", lossless=True)
+        # Convert and save the image as PNG
+        img.save(save_path, "PNG")
 
-        # Resize the image to 40x40, remove alpha channel, and save it as WebP (lossless)
+        # Resize the image to 40x40, remove alpha channel, and save it as PNG
         resized_img = img.resize((40, 40))
-        resized_img.save(os.path.join(save_dir, "40x40_upload.webp"), "WEBP", lossless=True)
+        resized_img.save(os.path.join(save_dir, "40x40_upload.png"), "PNG")
 
         # Convert the resized image to grayscale, enhance contrast and brightness, and save it
         gray_img = ImageOps.grayscale(resized_img)
         enhanced_img = ImageEnhance.Contrast(gray_img).enhance(2.0)
         enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.25)
-        enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.webp"), "WEBP", lossless=True)
+        enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.png"), "PNG")
 
         # Execute the video_generator.py script
         subprocess.run(["python", "video_generator.py"], check=True)
