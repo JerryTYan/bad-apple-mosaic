@@ -47,8 +47,8 @@ def uploadFileHandler():
 
         # Convert the resized image to grayscale, enhance contrast and brightness, and save it
         gray_img = ImageOps.grayscale(resized_img)
-        enhanced_img = ImageEnhance.Contrast(gray_img).enhance(1.5)
-        enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.5)
+        enhanced_img = ImageEnhance.Contrast(gray_img).enhance(2.0)
+        enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.25)
         enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.png"))
 
         # Execute the video_generator.py script
