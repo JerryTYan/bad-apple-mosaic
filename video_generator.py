@@ -9,88 +9,79 @@ import multiprocessing as mp
 output_dir = "assets/processed_frames"
 os.makedirs(output_dir, exist_ok=True)
 
-# Load images as NumPy arrays using OpenCV
 def load_image_as_cv_array(path):
+    """
+    Loads an image using OpenCV and resizes it to 40x40 pixels.
+    
+    Args:
+        path (str): Path to the image file.
+        
+    Returns:
+        np.ndarray: Resized image array.
+    """
     return cv.resize(cv.imread(path), (40, 40))
 
-# Load pixel data
-with open('pixel_data@72p30fps.pkl', 'rb') as file:
-    pixel_data = pickle.load(file)
-
-# Constants
-FRAME_WIDTH = 2880
-FRAME_HEIGHT = 2160
-TILE_SIZE = 40
-
-# Function to generate frames using OpenCV
 def generate_frame(frame_info, user_img_array, gray_user_img_array, blank_frame_array):
+    """
+    Generates individual frames by overlaying user images and saves them as PNG files.
+    
+    Args:
+        frame_info (tuple): Frame data and pixel values.
+        user_img_array (np.ndarray): Color image array of the user's image.
+        gray_user_img_array (np.ndarray): Grayscale version of the user's image.
+        blank_frame_array (np.ndarray): Blank frame template.
+    """
     key, value = frame_info
-    frame_number = f"frame_{int(key):05d}.png"  # Use .png extension
-    
-    # Copy the blank frame
+    frame_number = f"frame_{int(key):05d}.png"
     frame_array = blank_frame_array.copy()
-
-    # Initialize new position values
+    
     posx, posy = 0, 0
-    
     for pixel in value:
-        # If white, paste the user image; if black, paste the gray image
-        if pixel == 1:
-            frame_array[posy:posy+TILE_SIZE, posx:posx+TILE_SIZE] = user_img_array
-        else:
-            frame_array[posy:posy+TILE_SIZE, posx:posx+TILE_SIZE] = gray_user_img_array
-
-        # Move to the next tile position
-        posx += TILE_SIZE
-        if posx >= FRAME_WIDTH:
+        frame_array[posy:posy+40, posx:posx+40] = user_img_array if pixel == 1 else gray_user_img_array
+        posx += 40
+        if posx >= 2880:
             posx = 0
-            posy += TILE_SIZE
-        if posy >= FRAME_HEIGHT:
+            posy += 40
+        if posy >= 2160:
             break
-    
-    # Save the frame as PNG using OpenCV
     cv.imwrite(os.path.join(output_dir, frame_number), frame_array, [cv.IMWRITE_PNG_COMPRESSION, 1])
 
-# Generate frames in parallel
 def generate_frames():
+    """
+    Generates all frames in parallel using multiple CPU cores.
+    """
     user_img_array = load_image_as_cv_array("assets/uploads/40x40_upload.png")
     gray_user_img_array = load_image_as_cv_array("assets/uploads/gray_40x40_upload.png")
-    
-    # Create a blank frame (3 channels for RGB)
-    blank_frame_array = np.zeros((FRAME_HEIGHT, FRAME_WIDTH, 3), dtype=np.uint8)
+    blank_frame_array = np.zeros((2160, 2880, 3), dtype=np.uint8)
 
-    # Parallel frame generation
     with mp.Pool(max(2, mp.cpu_count() - 2)) as pool:
+        with open('pixel_data@72p30fps.pkl', 'rb') as file:
+            pixel_data = pickle.load(file)
         pool.starmap(generate_frame, [(frame_info, user_img_array, gray_user_img_array, blank_frame_array) for frame_info in pixel_data.items()])
 
-# Generate video and merge with audio in one step
 def generate_video(frames_dir, fps, output_video_path, audio_path):
+    """
+    Combines the generated frames into a video and merges it with the audio.
+    
+    Args:
+        frames_dir (str): Directory containing frame images.
+        fps (int): Frames per second for the video.
+        output_video_path (str): Path to the output video file.
+        audio_path (str): Path to the audio file to be merged with the video.
+    """
     input_video = ffmpeg.input(f'{frames_dir}/frame_%05d.png', framerate=fps)
     input_audio = ffmpeg.input(audio_path)
 
-    # Concatenate the video and audio streams
-    (
-        ffmpeg
-        .concat(input_video, input_audio, v=1, a=1)  # Concatenate video and audio
-        .output(output_video_path,
-                vcodec='libx264',
-                pix_fmt='yuv420p',
-                acodec='aac',
-                strict='experimental',
-                shortest=None)
-        .run()
-    )
+    ffmpeg.concat(input_video, input_audio, v=1, a=1).output(
+        output_video_path, vcodec='libx264', pix_fmt='yuv420p', acodec='aac', strict='experimental'
+    ).run()
 
 if __name__ == "__main__":
     start_time = time.time()
-    
-    # Generate frames
     print("Generating frames...")
     generate_frames()
     
-    # Generate video with audio
     print("Generating video with audio...")
     generate_video('assets/processed_frames', 30, 'good_apple.mp4', 'assets/bad_apple_enhanced.mp3')
 
-    end_time = time.time()
-    print(f"Process complete in {end_time - start_time:.2f} seconds.")
+    print(f"Process complete in {time.time() - start_time:.2f} seconds.")
