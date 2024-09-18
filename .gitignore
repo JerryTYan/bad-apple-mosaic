@@ -163,6 +163,7 @@ cython_debug/
 *.mp4
 
 # Frames
-assets/72p_frames
+assets/frames@72p60fps
+assets/frames@72p30fps
 assets/processed_frames
 assets/uploads

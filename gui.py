@@ -10,7 +10,9 @@ def selectFileHandler():
     
     if file_path:
         # Display selected file path in the label
-        fileNameLbl.configure(text=file_path)
+        max_length = 40
+        displayed_file_path = ('...' + file_path[-(max_length-3):]) if len(file_path) > max_length else file_path
+        fileNameLbl.configure(text=displayed_file_path)
         
         # Open and create a thumbnail for display in the GUI
         img = Image.open(file_path).convert('RGB')  # Convert to RGB to remove alpha channel

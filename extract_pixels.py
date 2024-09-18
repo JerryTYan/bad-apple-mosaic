@@ -15,7 +15,7 @@ def bit_extraction(frame):
     return [1 if pixel == 255 else 0 for row in frame for pixel in row]
 
 # Input directory with 72p frames
-input_dir = "assets/72p_frames"
+input_dir = "assets/frames@72p30fps"
 
 # Store pixel data in an ordered dictionary with frame numbers as keys
 pixel_data = OrderedDict()
@@ -35,5 +35,5 @@ for frame_file in raw_frame_files:
     pixel_data[frame_number] = frame_data
     
 # Serialize data using pickle
-with open('pixel_data.pkl', 'wb') as file:
+with open('pixel_data@72p30fps.pkl', 'wb') as file:
     pickle.dump(pixel_data, file)

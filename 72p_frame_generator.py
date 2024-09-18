@@ -1,16 +1,15 @@
 #ffmpeg -i bad_apple@2160p60fps.mp4 -vf "scale=72:54" bad_apple@72p60fps.mp4
-#ffmpeg -i bad_apple@2160p60fps.mp4 bad_apple.mp3
 
 import cv2 as cv
 import os
 import numpy as np
 
 # Create the output directory if it doesn't exist
-output_dir = 'assets/72p_frames'
+output_dir = 'assets/frames@72p30fps'
 os.makedirs(output_dir, exist_ok=True)
 
 # Open the input video
-input_video = cv.VideoCapture('bad_apple@72p60fps.mp4')
+input_video = cv.VideoCapture('bad_apple@72p30fps.mp4')
 
 # Get video properties
 width = int(input_video.get(cv.CAP_PROP_FRAME_WIDTH))
