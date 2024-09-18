@@ -6,6 +6,8 @@ import time
 import pickle
 import multiprocessing as mp
 
+mp.set_start_method('spawn', force=True)
+
 output_dir = "assets/processed_frames"
 os.makedirs(output_dir, exist_ok=True)
 
@@ -54,10 +56,15 @@ def generate_frames():
     gray_user_img_array = load_image_as_cv_array("assets/uploads/gray_40x40_upload.png")
     blank_frame_array = np.zeros((2160, 2880, 3), dtype=np.uint8)
 
-    with mp.Pool(max(2, mp.cpu_count() - 2)) as pool:
-        with open('pixel_data@72p30fps.pkl', 'rb') as file:
-            pixel_data = pickle.load(file)
-        pool.starmap(generate_frame, [(frame_info, user_img_array, gray_user_img_array, blank_frame_array) for frame_info in pixel_data.items()])
+    with open('pixel_data@72p30fps.pkl', 'rb') as file:
+        pixel_data = pickle.load(file)
+
+    ctx = mp.get_context('spawn')
+    with ctx.Pool(max(2, mp.cpu_count() - 2)) as pool:
+        pool.starmap(
+            generate_frame, 
+            [(frame_info, user_img_array, gray_user_img_array, blank_frame_array) for frame_info in pixel_data.items()]
+        )
 
 def generate_video(frames_dir, fps, output_video_path, audio_path):
     """
@@ -82,6 +89,11 @@ if __name__ == "__main__":
     generate_frames()
     
     print("Generating video with audio...")
-    generate_video('assets/processed_frames', 30, 'good_apple.mp4', 'assets/bad_apple_enhanced.mp3')
+    generate_video(
+        'assets/processed_frames', 
+        30, 
+        'good_apple.mp4', 
+        'assets/bad_apple_enhanced.mp3'
+    )
 
     print(f"Process complete in {time.time() - start_time:.2f} seconds.")

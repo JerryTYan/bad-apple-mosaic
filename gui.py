@@ -3,6 +3,7 @@ from tkinter import filedialog, PhotoImage
 from PIL import Image, ImageOps, ImageEnhance
 import os
 import subprocess
+import video_generator
 
 # Select file handler
 def selectFileHandler():
@@ -53,15 +54,19 @@ def uploadFileHandler():
         enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.1)
         enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.png"), "PNG")
 
-        # Execute the video_generator.py script using subprocess
-        subprocess.run(["python", "video_generator.py"], check=True)
+        # Import and call video_generator functions
+        video_generator.generate_frames()
+        video_generator.generate_video(
+            'assets/processed_frames', 
+            30, 
+            'good_apple.mp4', 
+            'assets/bad_apple_enhanced.mp3'
+        )
 
     except NameError:
         print("No valid file was selected")
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred while running video_generator.py: {e}")
     except Exception as e:
-        print(f"Error saving the image: {e}")
+        print(f"Error occurred: {e}")
 
 # Setup the app window
 app = ctk.CTk()
@@ -95,4 +100,5 @@ imgReqLbl.grid(row=3, column=0, columnspan=3, pady=10, sticky="ew")
 uploadBtn = ctk.CTkButton(master=app, text="Upload", border_width=1, border_color="#dfe6e9", fg_color="#6c5ce7", hover_color="#5f27cd", command=uploadFileHandler)
 uploadBtn.grid(row=4, column=0, columnspan=3, pady=10)
 
-app.mainloop()
+if __name__ == "__main__":
+    app.mainloop()
