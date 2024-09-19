@@ -3,6 +3,7 @@ import ffmpeg
 import numpy as np
 import os
 import time
+import shutil
 import pickle
 import multiprocessing as mp
 import config
@@ -94,3 +95,14 @@ def generate_video(frames_dir, fps, output_video_path, audio_path):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         raise
+    
+    finally:
+        cleanup()
+
+def cleanup():
+    """
+    Cleans up unused directories after video generation.
+    """
+    shutil.rmtree(config.UPLOAD_DIR)
+    shutil.rmtree(config.PROCESSED_FRAMES_DIR)
+    shutil.rmtree(config.PYCACHE_DIR)
