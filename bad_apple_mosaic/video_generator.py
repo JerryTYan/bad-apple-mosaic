@@ -5,19 +5,17 @@ import os
 import time
 import pickle
 import multiprocessing as mp
+import config
 
 mp.set_start_method('spawn', force=True)
-
-# Get the directory of the current script
-script_dir = os.path.dirname(os.path.abspath(__file__))
 
 def load_image_as_cv_array(path):
     """
     Loads an image using OpenCV and resizes it to 40x40 pixels.
-    
+
     Args:
         path (str): Path to the image file.
-        
+
     Returns:
         np.ndarray: Resized image array.
     """
@@ -26,7 +24,7 @@ def load_image_as_cv_array(path):
 def generate_frame(frame_info, user_img_array, gray_user_img_array, blank_frame_array, output_dir):
     """
     Generates individual frames by overlaying user images and saves them as PNG files.
-    
+
     Args:
         frame_info (tuple): Frame data and pixel values.
         user_img_array (np.ndarray): Color image array of the user's image.
@@ -37,10 +35,10 @@ def generate_frame(frame_info, user_img_array, gray_user_img_array, blank_frame_
     key, value = frame_info
     frame_number = f"frame_{int(key):05d}.png"
     frame_array = blank_frame_array.copy()
-    
+
     posx, posy = 0, 0
     for pixel in value:
-        frame_array[posy:posy+40, posx:posx+40] = user_img_array if pixel == 1 else gray_user_img_array
+        frame_array[posy:posy + 40, posx:posx + 40] = user_img_array if pixel == 1 else gray_user_img_array
         posx += 40
         if posx >= 2880:
             posx = 0
@@ -53,23 +51,23 @@ def generate_frames():
     """
     Generates all frames in parallel using multiple CPU cores.
     """
-    output_dir = os.path.join(script_dir, '..', 'assets', 'processed_frames')
+    output_dir = config.PROCESSED_FRAMES_DIR
     os.makedirs(output_dir, exist_ok=True)
 
-    user_img_path = os.path.join(script_dir, '..', 'assets', 'uploads', '40x40_upload.png')
-    gray_user_img_path = os.path.join(script_dir, '..', 'assets', 'uploads', 'gray_40x40_upload.png')
+    user_img_path = os.path.join(config.UPLOAD_DIR, '40x40_upload.png')
+    gray_user_img_path = os.path.join(config.UPLOAD_DIR, 'gray_40x40_upload.png')
     user_img_array = load_image_as_cv_array(user_img_path)
     gray_user_img_array = load_image_as_cv_array(gray_user_img_path)
     blank_frame_array = np.zeros((2160, 2880, 3), dtype=np.uint8)
 
-    pixel_data_path = os.path.join(script_dir, '..', 'pixel_data', 'pixel_data@72p30fps.pkl')
+    pixel_data_path = config.PIXEL_DATA_FILE
     with open(pixel_data_path, 'rb') as file:
         pixel_data = pickle.load(file)
 
     ctx = mp.get_context('spawn')
     num_processes = max(2, int(mp.cpu_count() * 0.8))
     pool_inputs = [
-        (frame_info, user_img_array, gray_user_img_array, blank_frame_array, output_dir) 
+        (frame_info, user_img_array, gray_user_img_array, blank_frame_array, output_dir)
         for frame_info in pixel_data.items()
     ]
     with ctx.Pool(num_processes) as pool:
@@ -78,7 +76,7 @@ def generate_frames():
 def generate_video(frames_dir, fps, output_video_path, audio_path):
     """
     Combines the generated frames into a video and merges it with the audio.
-    
+
     Args:
         frames_dir (str): Directory containing frame images.
         fps (int): Frames per second for the video.
