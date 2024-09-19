@@ -5,6 +5,7 @@ import os
 import video_generator
 import time
 import config
+import threading
 
 class BadAppleApp(ctk.CTk):
     def __init__(self):
@@ -22,6 +23,10 @@ class BadAppleApp(ctk.CTk):
 
         # Setup the user interface
         self.setup_ui()
+        
+    def clear_window(self):
+        for widget in self.winfo_children():
+            widget.destroy()
 
     def setup_ui(self):
         # Configure grid layout
@@ -45,7 +50,7 @@ class BadAppleApp(ctk.CTk):
         # Select Image Button
         selectImageBtn = ctk.CTkButton(
             master=self, text="Select Image", border_width=1, border_color="#dfe6e9",
-            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.selectFileHandler
+            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.select_file_hanlder
         )
         selectImageBtn.grid(row=2, column=0, pady=10, sticky="ew")
 
@@ -64,11 +69,11 @@ class BadAppleApp(ctk.CTk):
         # Upload Button
         uploadBtn = ctk.CTkButton(
             master=self, text="Upload", border_width=1, border_color="#dfe6e9",
-            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.uploadFileHandler
+            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.upload_file_handler
         )
         uploadBtn.grid(row=4, column=0, columnspan=3, pady=10)
 
-    def selectFileHandler(self):
+    def select_file_hanlder(self):
         """
         Opens a file dialog to select an image, displays the selected image in the GUI,
         and saves the file path for further processing.
@@ -106,7 +111,7 @@ class BadAppleApp(ctk.CTk):
 
             self.selected_img_path, self.selected_img_extension = os.path.splitext(file_path)
 
-    def uploadFileHandler(self):
+    def upload_file_handler(self):
         """
         Uploads the selected file, saves it in multiple formats, and triggers video generation.
         """
@@ -117,20 +122,27 @@ class BadAppleApp(ctk.CTk):
         save_dir = config.UPLOAD_DIR
         os.makedirs(save_dir, exist_ok=True)
 
+        self.show_progress_bar()
+
+        # Start processing in a separate thread
+        processing_thread = threading.Thread(target=self.process_images_and_generate_video)
+        processing_thread.start()
+
+    def process_images_and_generate_video(self):
         try:
             save_file_name = "upload.png"
-            save_path = os.path.join(save_dir, save_file_name)
+            save_path = os.path.join(config.UPLOAD_DIR, save_file_name)
 
             img = Image.open(self.selected_img_path + self.selected_img_extension).convert('RGB')
             img.save(save_path, "PNG")
 
             resized_img = img.resize((40, 40))
-            resized_img.save(os.path.join(save_dir, "40x40_upload.png"), "PNG")
+            resized_img.save(os.path.join(config.UPLOAD_DIR, "40x40_upload.png"), "PNG")
 
             gray_img = ImageOps.grayscale(resized_img)
             enhanced_img = ImageEnhance.Contrast(gray_img).enhance(2.0)
             enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.1)
-            enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.png"), "PNG")
+            enhanced_img.save(os.path.join(config.UPLOAD_DIR, "gray_40x40_upload.png"), "PNG")
 
             # Call video_generator functions with adjusted paths
             start_time = time.time()
@@ -145,8 +157,29 @@ class BadAppleApp(ctk.CTk):
             )
             print(f"Process complete in {time.time() - start_time:.2f} seconds.")
 
+            # After processing is done, update the GUI
+            self.processing_complete()
+
         except Exception as e:
-            messagebox.showerror("Error", f"An unexpected error occurred: {e}")
+            self.show_error_message(f"An unexpected error occurred: {e}")
+                
+    def show_progress_bar(self):
+        self.clear_window()
+        progress_label = ctk.CTkLabel(
+            master=self, text="Processing... Please wait.", font=("Segoe UI", 16), anchor="center"
+        )
+        progress_label.pack(pady=20)
+
+    def processing_complete(self):
+        self.after(0, self._processing_complete)
+
+    def _processing_complete(self):
+        messagebox.showinfo("Info", "Processing complete.")
+        self.clear_window()
+        self.setup_ui()
+
+    def show_error_message(self, message):
+        self.after(0, lambda: messagebox.showerror("Error", message))
 
 if __name__ == "__main__":
     app = BadAppleApp()
