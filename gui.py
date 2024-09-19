@@ -2,8 +2,8 @@ import customtkinter as ctk
 from tkinter import filedialog, PhotoImage
 from PIL import Image, ImageOps, ImageEnhance
 import os
-import subprocess
 import video_generator
+import time
 
 # Select file handler
 def selectFileHandler():
@@ -13,7 +13,20 @@ def selectFileHandler():
     """
     file_path = filedialog.askopenfilename(
         initialdir="/", title="Select An Image", 
-        filetypes=[('png files','*.png'),('jpg files','*.jpg'),('jpeg files','*.jpeg'), ('webp files','*.webp')]
+        filetypes=[
+            ('PNG files', '*.png'),
+            ('JPEG files', '*.jpg *.jpeg'),
+            ('WEBP files', '*.webp'),
+            ('BMP files', '*.bmp'),
+            ('GIF files', '*.gif'),
+            ('TIFF files', '*.tiff *.tif'),
+            ('PPM files', '*.ppm *.pgm *.pbm'),
+            ('ICO files', '*.ico'),
+            ('DDS files', '*.dds'),
+            ('PCX files', '*.pcx'),
+            ('PSD files', '*.psd'),
+            ('TGA files', '*.tga'),
+        ]
     )
     
     if file_path:
@@ -55,50 +68,53 @@ def uploadFileHandler():
         enhanced_img.save(os.path.join(save_dir, "gray_40x40_upload.png"), "PNG")
 
         # Import and call video_generator functions
+        start_time = time.time()
+        print("Generating frames...")
         video_generator.generate_frames()
+        print("Generating video...")
         video_generator.generate_video(
             'assets/processed_frames', 
             30, 
             'good_apple.mp4', 
             'assets/bad_apple_enhanced.mp3'
         )
+        print(f"Process complete in {time.time() - start_time:.2f} seconds.")
 
     except NameError:
         print("No valid file was selected")
     except Exception as e:
         print(f"Error occurred: {e}")
 
-# Setup the app window
-app = ctk.CTk()
-app.title("Bad Appleify")
-app.config(padx=50, pady=50)
-app.iconbitmap("assets/badApple.ico")
-
-ctk.set_appearance_mode("system")
-ctk.set_default_color_theme("blue")
-
-app.grid_columnconfigure((0, 1, 2), weight=1, uniform="col")
-app.grid_rowconfigure((0, 2, 3, 4), weight=1, uniform="row")
-app.grid_rowconfigure(1, weight=3)
-
-titleLbl = ctk.CTkLabel(master=app, text="Bad Appleify Any Image!", font=("Segoe UI", 20, "bold"), anchor="center")
-titleLbl.grid(row=0, column=0, columnspan=3, pady=10, sticky="ew")
-
-ctkImg = ctk.CTkImage(light_image=Image.open("assets/badApple.png"), size=(200,200))
-imgLbl = ctk.CTkLabel(master=app, image=ctkImg, anchor="center", text="")
-imgLbl.grid(row=1, column=0, columnspan=3, pady=10)
-
-selectImageBtn = ctk.CTkButton(master=app, text="Select Image", border_width=1, border_color="#dfe6e9", fg_color="#6c5ce7", hover_color="#5f27cd", command=selectFileHandler)
-selectImageBtn.grid(row=2, column=0, pady=10, sticky="ew")
-
-fileNameLbl = ctk.CTkLabel(master=app, text="No file selected", fg_color="#636e72", anchor="w", corner_radius=5)
-fileNameLbl.grid(row=2, column=1, columnspan=2, pady=10, sticky="ew")
-
-imgReqLbl = ctk.CTkLabel(master=app, text="*Your file must be a .webp, .png, .jpg, or .jpeg.", anchor="center")
-imgReqLbl.grid(row=3, column=0, columnspan=3, pady=10, sticky="ew")
-
-uploadBtn = ctk.CTkButton(master=app, text="Upload", border_width=1, border_color="#dfe6e9", fg_color="#6c5ce7", hover_color="#5f27cd", command=uploadFileHandler)
-uploadBtn.grid(row=4, column=0, columnspan=3, pady=10)
-
 if __name__ == "__main__":
+    # Setup the app window
+    app = ctk.CTk()
+    app.title("Bad Appleify")
+    app.config(padx=50, pady=50)
+    app.iconbitmap("assets/badApple.ico")
+
+    ctk.set_appearance_mode("system")
+    ctk.set_default_color_theme("blue")
+
+    app.grid_columnconfigure((0, 1, 2), weight=1, uniform="col")
+    app.grid_rowconfigure((0, 2, 3, 4), weight=1, uniform="row")
+    app.grid_rowconfigure(1, weight=3)
+
+    titleLbl = ctk.CTkLabel(master=app, text="Bad Appleify Any Image!", font=("Segoe UI", 20, "bold"), anchor="center")
+    titleLbl.grid(row=0, column=0, columnspan=3, pady=10, sticky="ew")
+
+    ctkImg = ctk.CTkImage(light_image=Image.open("assets/badApple.png"), size=(200,200))
+    imgLbl = ctk.CTkLabel(master=app, image=ctkImg, anchor="center", text="")
+    imgLbl.grid(row=1, column=0, columnspan=3, pady=10)
+
+    selectImageBtn = ctk.CTkButton(master=app, text="Select Image", border_width=1, border_color="#dfe6e9", fg_color="#6c5ce7", hover_color="#5f27cd", command=selectFileHandler)
+    selectImageBtn.grid(row=2, column=0, pady=10, sticky="ew")
+
+    fileNameLbl = ctk.CTkLabel(master=app, text="No file selected", fg_color="#636e72", anchor="w", corner_radius=5)
+    fileNameLbl.grid(row=2, column=1, columnspan=2, pady=10, sticky="ew")
+
+    imgReqLbl = ctk.CTkLabel(master=app, text="*Your file must be a .webp, .png, .jpg, or .jpeg.", anchor="center")
+    imgReqLbl.grid(row=3, column=0, columnspan=3, pady=10, sticky="ew")
+
+    uploadBtn = ctk.CTkButton(master=app, text="Upload", border_width=1, border_color="#dfe6e9", fg_color="#6c5ce7", hover_color="#5f27cd", command=uploadFileHandler)
+    uploadBtn.grid(row=4, column=0, columnspan=3, pady=10)
     app.mainloop()

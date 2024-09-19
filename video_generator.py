@@ -60,7 +60,7 @@ def generate_frames():
         pixel_data = pickle.load(file)
 
     ctx = mp.get_context('spawn')
-    with ctx.Pool(max(2, mp.cpu_count() - 2)) as pool:
+    with ctx.Pool(max(1, mp.cpu_count()-2)) as pool:
         pool.starmap(
             generate_frame, 
             [(frame_info, user_img_array, gray_user_img_array, blank_frame_array) for frame_info in pixel_data.items()]
@@ -83,17 +83,4 @@ def generate_video(frames_dir, fps, output_video_path, audio_path):
         output_video_path, vcodec='libx264', pix_fmt='yuv420p', acodec='aac', strict='experimental'
     ).run()
 
-if __name__ == "__main__":
-    start_time = time.time()
-    print("Generating frames...")
-    generate_frames()
-    
-    print("Generating video with audio...")
-    generate_video(
-        'assets/processed_frames', 
-        30, 
-        'good_apple.mp4', 
-        'assets/bad_apple_enhanced.mp3'
-    )
-
-    print(f"Process complete in {time.time() - start_time:.2f} seconds.")
+#if __name__ == "__main__":
