@@ -1,11 +1,10 @@
-# gui.py
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageOps, ImageEnhance
 import os
 import video_generator
 import time
-import config  # Import the config module
+import config
 
 class BadAppleApp(ctk.CTk):
     def __init__(self):
@@ -77,13 +76,22 @@ class BadAppleApp(ctk.CTk):
         file_path = filedialog.askopenfilename(
             initialdir="/", title="Select An Image",
             filetypes=[
-                ('All image files', "*.png *.jpg *.jpeg *.webp *.bmp *.gif *.tiff *.tif *.ppm *.pgm *.pbm *.ico *.dds *.pcx *.psd *.tga"),
+                ('All files', "*.png *.jpg *.jpeg *.png *.webp *.bmp *.gif *.tiff *.tif *.ppm *.pgm *.pbm *.ico *.dds *.pcx *.psd *.tga"),
                 ('PNG files', '*.png'),
                 ('JPEG files', '*.jpg *.jpeg'),
-                # ... other file types ...
+                ('WEBP files', '*.webp'),
+                ('BMP files', '*.bmp'),
+                ('GIF files', '*.gif'),
+                ('TIFF files', '*.tiff *.tif'),
+                ('PPM files', '*.ppm *.pgm *.pbm'),
+                ('ICO files', '*.ico'),
+                ('DDS files', '*.dds'),
+                ('PCX files', '*.pcx'),
+                ('PSD files', '*.psd'),
+                ('TGA files', '*.tga'),
             ]
         )
-
+        
         if file_path:
             max_length = 40
             displayed_file_path = ('...' + file_path[-(max_length - 3):]) if len(file_path) > max_length else file_path
