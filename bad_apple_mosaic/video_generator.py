@@ -53,26 +53,44 @@ def generate_frames():
     Generates all frames in parallel using multiple CPU cores.
     """
     output_dir = config.PROCESSED_FRAMES_DIR
-    os.makedirs(output_dir, exist_ok=True)
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        
+    except OSError as e:
+        messagebox.showerror("Directory Error", f"Could not create PROCESSED_FRAMES_DIR directory: {e}")
+        return
 
-    user_img_path = os.path.join(config.UPLOAD_DIR, '40x40_upload.png')
-    gray_user_img_path = os.path.join(config.UPLOAD_DIR, 'gray_40x40_upload.png')
-    user_img_array = load_image_as_cv_array(user_img_path)
-    gray_user_img_array = load_image_as_cv_array(gray_user_img_path)
-    blank_frame_array = np.zeros((2160, 2880, 3), dtype=np.uint8)
+    try:
+        user_img_path = os.path.join(config.UPLOAD_DIR, '40x40_upload.png')
+        gray_user_img_path = os.path.join(config.UPLOAD_DIR, 'gray_40x40_upload.png')
+        user_img_array = load_image_as_cv_array(user_img_path)
+        gray_user_img_array = load_image_as_cv_array(gray_user_img_path)
+        blank_frame_array = np.zeros((2160, 2880, 3), dtype=np.uint8)
 
-    pixel_data_path = config.PIXEL_DATA_FILE
-    with open(pixel_data_path, 'rb') as file:
-        pixel_data = pickle.load(file)
+        pixel_data_path = config.PIXEL_DATA_FILE
+        with open(pixel_data_path, 'rb') as file:
+            pixel_data = pickle.load(file)
+            
+    except FileNotFoundError as e:
+        messagebox.showerror("File Error", f"Missing necessary files: {e}")
+        return
+    except Exception as e:
+        messagebox.showerror("Frame Generation Error", f"An unexpected error occured while generating frames: {e}")
+        return
 
-    ctx = mp.get_context('spawn')
-    num_processes = max(2, int(mp.cpu_count() * 0.8))
-    pool_inputs = [
-        (frame_info, user_img_array, gray_user_img_array, blank_frame_array, output_dir)
-        for frame_info in pixel_data.items()
-    ]
-    with ctx.Pool(num_processes) as pool:
-        pool.starmap(generate_frame, pool_inputs)
+    try:
+        ctx = mp.get_context('spawn')
+        num_processes = max(2, int(mp.cpu_count() * 0.8))
+        pool_inputs = [
+            (frame_info, user_img_array, gray_user_img_array, blank_frame_array, output_dir)
+            for frame_info in pixel_data.items()
+        ]
+        with ctx.Pool(num_processes) as pool:
+            pool.starmap(generate_frame, pool_inputs)
+            
+    except Exception as e:
+        messagebox.showerror("Multiprocessing Error", f"An unexpected error occured in parallel frame generation: {e}")
+        return
 
 def generate_video(frames_dir, fps, output_video_path, audio_path):
     """
@@ -92,9 +110,15 @@ def generate_video(frames_dir, fps, output_video_path, audio_path):
             output_video_path, vcodec='libx264', pix_fmt='yuv420p', acodec='aac', strict='experimental'
         ).run()
 
+    except FileNotFoundError as e:
+        messagebox.showerror("File Error", f"Missing audio or frame files: {e}")
+        return
+    except ffmpeg.Error as e:
+        messagebox.showerror("FFmpeg Error", f"Error processing video with FFmpeg: {e}")
+        return
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        raise
+        messagebox.showerror("Video Generation Error", f"An unexpected error occurred while generating the video: {e}")
+        return
     
     finally:
         cleanup()
@@ -103,6 +127,29 @@ def cleanup():
     """
     Cleans up unused directories after video generation.
     """
-    shutil.rmtree(config.UPLOAD_DIR)
-    shutil.rmtree(config.PROCESSED_FRAMES_DIR)
-    shutil.rmtree(config.PYCACHE_DIR)
+    try:
+        shutil.rmtree(config.UPLOAD_DIR)
+    except FileNotFoundError:
+        pass
+    except PermissionError as e:
+        messagebox.showerror("Permission Error", f"Could not remove upload directory: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"An unexpected error occurred while cleaning upload directory: {e}")
+
+    try:
+        shutil.rmtree(config.PROCESSED_FRAMES_DIR)
+    except FileNotFoundError:
+        pass
+    except PermissionError as e:
+        messagebox.showerror("Permission Error", f"Could not remove processed frames directory: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"An unexpected error occurred while cleaning processed frames directory: {e}")
+
+    try:
+        shutil.rmtree(config.PYCACHE_DIR)
+    except FileNotFoundError:
+        pass
+    except PermissionError as e:
+        messagebox.showerror("Permission Error", f"Could not remove pycache directory: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"An unexpected error occurred while cleaning pycache directory: {e}")
