@@ -2,6 +2,7 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageOps, ImageEnhance
 import os
+import sys
 import video_generator
 import time
 import config
@@ -13,6 +14,7 @@ class BadAppleApp(ctk.CTk):
         self.title("Bad Appleify")
         self.config(padx=50, pady=50)
         self.iconbitmap(config.ICON_FILE)
+        self.eval('tk::PlaceWindow . center')
 
         ctk.set_appearance_mode("system")
         ctk.set_default_color_theme("blue")
@@ -21,9 +23,15 @@ class BadAppleApp(ctk.CTk):
         self.selected_img_path = None
         self.selected_img_extension = None
 
+        # Keep a reference to the processing thread
+        self.processing_thread = None
+
         # Setup the user interface
         self.setup_ui()
-        
+
+        # Set the protocol handler for window close event
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
     def clear_window(self):
         for widget in self.winfo_children():
             widget.destroy()
@@ -46,11 +54,12 @@ class BadAppleApp(ctk.CTk):
         ctkImg = ctk.CTkImage(light_image=img, size=(200, 200))
         self.imgLbl = ctk.CTkLabel(master=self, image=ctkImg, anchor="center", text="")
         self.imgLbl.grid(row=1, column=0, columnspan=3, pady=10)
+        self.imgLbl.image = ctkImg
 
         # Select Image Button
         selectImageBtn = ctk.CTkButton(
             master=self, text="Select Image", border_width=1, border_color="#dfe6e9",
-            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.select_file_hanlder
+            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.select_file_handler
         )
         selectImageBtn.grid(row=2, column=0, pady=10, sticky="ew")
 
@@ -73,7 +82,7 @@ class BadAppleApp(ctk.CTk):
         )
         uploadBtn.grid(row=4, column=0, columnspan=3, pady=10)
 
-    def select_file_hanlder(self):
+    def select_file_handler(self):
         """
         Opens a file dialog to select an image, displays the selected image in the GUI,
         and saves the file path for further processing.
@@ -96,7 +105,7 @@ class BadAppleApp(ctk.CTk):
                 ('TGA files', '*.tga'),
             ]
         )
-        
+
         if file_path:
             max_length = 40
             displayed_file_path = ('...' + file_path[-(max_length - 3):]) if len(file_path) > max_length else file_path
@@ -107,7 +116,7 @@ class BadAppleApp(ctk.CTk):
 
             ctkImg = ctk.CTkImage(light_image=img, size=(200, 200))
             self.imgLbl.configure(image=ctkImg)
-            self.imgLbl.image = ctkImg  # Keep a reference to prevent garbage collection
+            self.imgLbl.image = ctkImg
 
             self.selected_img_path, self.selected_img_extension = os.path.splitext(file_path)
 
@@ -125,8 +134,8 @@ class BadAppleApp(ctk.CTk):
         self.show_progress_bar()
 
         # Start processing in a separate thread
-        processing_thread = threading.Thread(target=self.process_images_and_generate_video)
-        processing_thread.start()
+        self.processing_thread = threading.Thread(target=self.process_images_and_generate_video, daemon=True)
+        self.processing_thread.start()
 
     def process_images_and_generate_video(self):
         try:
@@ -162,7 +171,7 @@ class BadAppleApp(ctk.CTk):
 
         except Exception as e:
             self.show_error_message(f"An unexpected error occurred: {e}")
-                
+
     def show_progress_bar(self):
         self.clear_window()
         progress_label = ctk.CTkLabel(
@@ -180,6 +189,18 @@ class BadAppleApp(ctk.CTk):
 
     def show_error_message(self, message):
         self.after(0, lambda: messagebox.showerror("Error", message))
+
+    def on_closing(self):
+        if messagebox.askokcancel("Quit", "Do you want to cancel?"):
+            try:
+                # Terminate the executor if it's running
+                if video_generator.executor_reference is not None:
+                    video_generator.executor_reference.shutdown(wait=False, cancel_futures=True)
+            except Exception as e:
+                print(f"Error during shutdown: {e}")
+            finally:
+                self.destroy()
+                sys.exit(0)
 
 if __name__ == "__main__":
     app = BadAppleApp()
