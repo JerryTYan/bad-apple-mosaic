@@ -174,10 +174,19 @@ class BadAppleApp(ctk.CTk):
 
     def show_progress_bar(self):
         self.clear_window()
-        progress_label = ctk.CTkLabel(
-            master=self, text="Processing... Please wait.", font=("Segoe UI", 16), anchor="center"
+        
+        self.progress_label = ctk.CTkLabel(
+            master=self, text="Generating video...", font=("Segoe UI", 16), anchor="center"
         )
-        progress_label.pack(pady=20)
+        self.progress_bar = ctk.CTkProgressBar(self, orientation="horizontal", mode="indeterminate", height=20, progress_color="#32CD32")
+        self.cancelBtn = ctk.CTkButton(
+            master=self, text="Cancel", border_width=1, border_color="#dfe6e9",
+            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.on_closing
+        )
+        self.progress_label.pack(pady=20)
+        self.progress_bar.pack(pady=20)
+        self.progress_bar.start()
+        self.cancelBtn.pack(pady=20)
 
     def processing_complete(self):
         self.after(0, self._processing_complete)
