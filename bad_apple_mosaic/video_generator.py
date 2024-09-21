@@ -2,14 +2,13 @@ import cv2 as cv
 import ffmpeg
 import numpy as np
 import os
-import time
 import shutil
 import pickle
 import concurrent.futures
 import multiprocessing as mp
 import config
 
-mp.set_start_method('spawn', force=True)
+mp.set_start_method("spawn", force=True)
 
 executor_reference = None
 
@@ -33,8 +32,8 @@ def generate_frame(frame_info):
         frame_info (tuple): Frame data and pixel values.
     """
     key, value = frame_info
-    user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, '40x40_upload.png'))
-    gray_user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, 'gray_40x40_upload.png'))
+    user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, "40x40_upload.png"))
+    gray_user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, "gray_40x40_upload.png"))
     blank_frame_array = np.zeros((2160, 2880, 3), dtype=np.uint8)
     output_dir = config.PROCESSED_FRAMES_DIR
 
@@ -59,7 +58,7 @@ def generate_frames():
     os.makedirs(output_dir, exist_ok=True)
 
     pixel_data_path = config.PIXEL_DATA_FILE
-    with open(pixel_data_path, 'rb') as file:
+    with open(pixel_data_path, "rb") as file:
         pixel_data = pickle.load(file)
 
     num_processes = max(2, int(mp.cpu_count() * 0.8))
@@ -83,13 +82,16 @@ def generate_video(frames_dir, fps, output_video_path, audio_path):
         output_video_path (str): Path to the output video file.
         audio_path (str): Path to the audio file to be merged with the video.
     """
+
     try:
-        input_video = ffmpeg.input(os.path.join(frames_dir, 'frame_%05d.png'), framerate=fps)
+        output_dir = os.path.dirname(output_video_path)
+        os.makedirs(output_dir, exist_ok=True)
+        input_video = ffmpeg.input(os.path.join(frames_dir, "frame_%05d.png"), framerate=fps)
         input_audio = ffmpeg.input(audio_path)
 
         ffmpeg.concat(input_video, input_audio, v=1, a=1).output(
-            output_video_path, vcodec='libx264', pix_fmt='yuv420p', acodec='aac', strict='experimental'
-        ).run()
+            output_video_path, vcodec="libx264", pix_fmt="yuv420p", acodec="aac", strict="experimental", format="mp4"
+        ).run(overwrite_output=True)
     except Exception as e:
         raise e
     finally:
