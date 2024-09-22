@@ -8,6 +8,7 @@ import video_generator
 import time
 import config
 import threading
+import multiprocessing
 
 class BadAppleApp(ctk.CTk):
     def __init__(self):
@@ -300,5 +301,6 @@ class SaveFrame(ctk.CTkFrame):
         save_as_button.grid(row=1, column=0, padx=20, pady=10)
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     app = BadAppleApp()
     app.mainloop()

@@ -1,17 +1,22 @@
 import os
+import sys
 
-# Directory of current script (config.py)
-script_dir = os.path.dirname(os.path.abspath(__file__))
+# Determine the base path
+if getattr(sys, 'frozen', False):
+    # Running in a bundled executable
+    base_path = sys._MEIPASS
+else:
+    # Running as a script
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-# Paths relative to script_dir
-ASSETS_DIR = os.path.abspath(os.path.join(script_dir, '..', 'assets'))
+# Paths relative to base_path
+ASSETS_DIR = os.path.join(base_path, 'assets')
 UPLOAD_DIR = os.path.join(ASSETS_DIR, 'uploads')
-PYCACHE_DIR = os.path.join(script_dir, '__pycache__')
+PYCACHE_DIR = os.path.join(base_path, '__pycache__')
 PROCESSED_FRAMES_DIR = os.path.join(ASSETS_DIR, 'processed_frames')
-OUTPUT_VIDEO = os.path.abspath(os.path.join(script_dir, '..', 'video_output', "good_apple.mp4"))
+OUTPUT_VIDEO = os.path.join(base_path, 'video_output', 'good_apple.mp4')
 AUDIO_FILE = os.path.join(ASSETS_DIR, 'bad_apple_enhanced.mp3')
 ICON_FILE = os.path.join(ASSETS_DIR, 'badApple.ico')
 IMAGE_FILE = os.path.join(ASSETS_DIR, 'badApple.png')
-PIXEL_DATA_DIR = os.path.abspath(os.path.join(script_dir, '..', 'pixel_data'))
-PIXEL_DATA_FILE = os.path.join(PIXEL_DATA_DIR, 'pixel_data@72p30fps.pkl')
+PIXEL_DATA_FILE = os.path.join(base_path, 'pixel_data', 'pixel_data@72p30fps.pkl')
 FRAME_RATE = 30

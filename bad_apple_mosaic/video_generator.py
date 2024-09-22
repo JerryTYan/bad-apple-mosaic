@@ -2,13 +2,15 @@ import cv2 as cv
 import ffmpeg
 import numpy as np
 import os
+import sys
 import shutil
 import pickle
 import concurrent.futures
 import multiprocessing as mp
 import config
 
-mp.set_start_method("spawn", force=True)
+if __name__ == "__main__":
+    mp.set_start_method("spawn", force=True)
 
 executor_reference = None
 
@@ -72,6 +74,22 @@ def generate_frames():
         executor.shutdown(wait=True)
         executor_reference = None
 
+def get_ffmpeg_executable():
+    """
+    Returns the path to the ffmpeg executable.
+    If running as a packaged executable, it assumes ffmpeg.exe is in the same directory.
+    If running as a script, it assumes ffmpeg.exe is in the parent directory of the script.
+    """
+    if getattr(sys, 'frozen', False):
+        # Running in a bundle (PyInstaller)
+        base_path = sys._MEIPASS
+        ffmpeg_exe = os.path.join(base_path, 'ffmpeg.exe')
+    else:
+        # Running in a normal Python environment
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        ffmpeg_exe = os.path.join(base_path, 'ffmpeg.exe')
+    return ffmpeg_exe
+
 def generate_video(frames_dir, fps, output_video_path, audio_path):
     """
     Combines the generated frames into a video and merges it with the audio.
@@ -89,9 +107,16 @@ def generate_video(frames_dir, fps, output_video_path, audio_path):
         input_video = ffmpeg.input(os.path.join(frames_dir, "frame_%05d.png"), framerate=fps)
         input_audio = ffmpeg.input(audio_path)
 
+        ffmpeg_exe = get_ffmpeg_executable()
+
         ffmpeg.concat(input_video, input_audio, v=1, a=1).output(
-            output_video_path, vcodec="libx264", pix_fmt="yuv420p", acodec="aac", strict="experimental", format="mp4"
-        ).run(overwrite_output=True)
+            output_video_path,
+            vcodec="libx264",
+            pix_fmt="yuv420p",
+            acodec="aac",
+            strict="experimental",
+            format="mp4"
+        ).run(overwrite_output=True, cmd=ffmpeg_exe)
     except Exception as e:
         raise e
     finally:
