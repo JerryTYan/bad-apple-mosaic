@@ -7,10 +7,8 @@ import shutil
 import pickle
 import concurrent.futures
 import multiprocessing as mp
+import subprocess
 import config
-
-if __name__ == "__main__":
-    mp.set_start_method("spawn", force=True)
 
 executor_reference = None
 
@@ -74,6 +72,15 @@ def generate_frames():
         executor.shutdown(wait=True)
         executor_reference = None
 
+    # After generating frames, save frame 250 as "video_preview.png"
+    frame_number = 250
+    frame_filename = f"frame_{frame_number:05d}.png"
+    frame_path = os.path.join(output_dir, frame_filename)
+    if os.path.exists(frame_path):
+        shutil.copyfile(frame_path, config.VIDEO_PREVIEW_FILE)
+    else:
+        print(f"Frame {frame_number} not found at {frame_path}. Cannot create video preview.")
+
 def get_ffmpeg_executable():
     """
     Returns the path to the ffmpeg executable.
@@ -88,35 +95,53 @@ def get_ffmpeg_executable():
         # Running in a normal Python environment
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
         ffmpeg_exe = os.path.join(base_path, 'ffmpeg.exe')
+
+    ffmpeg_exe = os.path.abspath(ffmpeg_exe)
+
     return ffmpeg_exe
 
 def generate_video(frames_dir, fps, output_video_path, audio_path):
-    """
-    Combines the generated frames into a video and merges it with the audio.
-
-    Args:
-        frames_dir (str): Directory containing frame images.
-        fps (int): Frames per second for the video.
-        output_video_path (str): Path to the output video file.
-        audio_path (str): Path to the audio file to be merged with the video.
-    """
-
     try:
         output_dir = os.path.dirname(output_video_path)
         os.makedirs(output_dir, exist_ok=True)
-        input_video = ffmpeg.input(os.path.join(frames_dir, "frame_%05d.png"), framerate=fps)
-        input_audio = ffmpeg.input(audio_path)
 
         ffmpeg_exe = get_ffmpeg_executable()
 
-        ffmpeg.concat(input_video, input_audio, v=1, a=1).output(
-            output_video_path,
-            vcodec="libx264",
-            pix_fmt="yuv420p",
-            acodec="aac",
-            strict="experimental",
-            format="mp4"
-        ).run(overwrite_output=True, cmd=ffmpeg_exe)
+        # Build the FFmpeg command
+        input_pattern = os.path.join(frames_dir, "frame_%05d.png")
+        ffmpeg_cmd = [
+            ffmpeg_exe,
+            '-y',  # Overwrite output files without asking
+            '-framerate', str(fps),
+            '-i', input_pattern,
+            '-i', audio_path,
+            '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac',
+            '-strict', 'experimental',
+            '-shortest',
+            output_video_path
+        ]
+
+        # Set creationflags to suppress console window (Windows only)
+        creationflags = 0
+        if os.name == 'nt':
+            creationflags = subprocess.CREATE_NO_WINDOW
+
+        # Run the FFmpeg command
+        process = subprocess.Popen(
+            ffmpeg_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            creationflags=creationflags
+        )
+
+        # Wait for the process to complete
+        stdout, stderr = process.communicate()
+
+        if process.returncode != 0:
+            raise Exception(f"FFmpeg error: {stderr.decode()}")
+
     except Exception as e:
         raise e
     finally:
@@ -140,3 +165,7 @@ def cleanup():
         shutil.rmtree(config.PYCACHE_DIR)
     except Exception:
         pass
+
+if __name__ == "__main__":
+    mp.set_start_method("spawn", force=True)
+    

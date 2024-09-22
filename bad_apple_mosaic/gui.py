@@ -31,12 +31,9 @@ class BadAppleApp(ctk.CTk):
         # Keep a reference to the processing thread
         self.processing_thread = None
 
-        # Create frames
+        # Initialize frames dictionary
         self.frames = {}
-        for F in (InitialFrame, ProgressFrame, SaveFrame):
-            frame = F(parent=self, controller=self)
-            self.frames[F] = frame
-            frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.current_frame = None
 
         # Show initial frame
         self.show_frame(InitialFrame)
@@ -46,15 +43,26 @@ class BadAppleApp(ctk.CTk):
 
     def show_frame(self, frame_class):
         """Bring the specified frame to the front and handle frame transitions."""
-        frame = self.frames[frame_class]
-        # Hide the current frame if it has an on_hide_frame method
-        if hasattr(self, 'current_frame') and hasattr(self.current_frame, 'on_hide_frame'):
-            self.current_frame.on_hide_frame()
-        # Show the new frame
-        frame.tkraise()
+        # Create the frame if it doesn't exist
+        if frame_class not in self.frames:
+            frame = frame_class(parent=self, controller=self)
+            self.frames[frame_class] = frame
+        else:
+            frame = self.frames[frame_class]
+
+        # Hide the current frame if it exists
+        if self.current_frame and self.current_frame != frame:
+            if hasattr(self.current_frame, 'on_hide_frame'):
+                self.current_frame.on_hide_frame()
+            self.current_frame.place_forget()
+
+        # Place the new frame
+        frame.place(relx=0, rely=0, relwidth=1, relheight=1)
+
         # Call on_show_frame if it exists
         if hasattr(frame, 'on_show_frame'):
             frame.on_show_frame()
+
         # Update the current frame reference
         self.current_frame = frame
 
@@ -163,13 +171,13 @@ class BadAppleApp(ctk.CTk):
         save_path = filedialog.asksaveasfilename(
             defaultextension=".mp4",
             filetypes=[("MP4 files", "*.mp4"), ("All files", "*.*")],
-            title="Save Video As"
+            title="Save Video As",
+            initialfile="good_apple.mp4"
         )
 
         if save_path:
             try:
                 shutil.copyfile(config.OUTPUT_VIDEO, save_path)
-                messagebox.showinfo("Success", "Video saved successfully!")
             except Exception as e:
                 messagebox.showerror("Error", f"Could not save the video: {e}")
             finally:
@@ -251,7 +259,7 @@ class ProgressFrame(ctk.CTkFrame):
 
         # Configure grid layout
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure((0, 1, 2), weight=1)
+        self.grid_rowconfigure((0, 1, 2, 3), weight=1)
 
         # Progress Label
         self.progress_label = ctk.CTkLabel(
@@ -262,13 +270,21 @@ class ProgressFrame(ctk.CTkFrame):
         # Progress Bar
         self.progress_bar = ctk.CTkProgressBar(self, orientation="horizontal", mode="indeterminate", height=20)
         self.progress_bar.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
+        
+        # Warning Label
+        warning_text = (
+            "⚠️ *Warning: This process may take several minutes and is CPU-intensive.\n"
+            "Please ensure your computer is plugged in and avoid running other heavy applications."
+        )
+        warningLbl = ctk.CTkLabel(master=self, text=warning_text, anchor="center")
+        warningLbl.grid(row=2, column=0, pady=10, sticky="ew")
 
         # Cancel Button
         self.cancelBtn = ctk.CTkButton(
             master=self, text="Cancel", border_width=1, border_color="#dfe6e9",
             fg_color="#6c5ce7", hover_color="#5f27cd", command=self.controller.on_closing
         )
-        self.cancelBtn.grid(row=2, column=0, padx=20, pady=10)
+        self.cancelBtn.grid(row=3, column=0, padx=20, pady=10)
 
     def on_show_frame(self):
         """Method called when the frame is shown."""
@@ -285,20 +301,36 @@ class SaveFrame(ctk.CTkFrame):
 
         # Configure grid layout
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure((0, 1), weight=1)
+        self.grid_rowconfigure((0, 1, 2, 3), weight=1)
 
-        # Save As Label
-        save_as_label = ctk.CTkLabel(
-            master=self, text="Generation complete!\nSave your video.", font=("Segoe UI", 20), anchor="center"
+        # Save As Labels
+        save_as_label_main = ctk.CTkLabel(
+            master=self, text="Video Generation Complete", font=("Segoe UI", 20, "bold"), anchor="center"
         )
-        save_as_label.grid(row=0, column=0, padx=20, pady=10)
+        save_as_label_main.grid(row=0, column=0, padx=10, pady=(10, 0))
+
+        save_as_label_sec = ctk.CTkLabel(
+            master=self, text="Save Your Video!", font=("Segoe UI", 16), anchor="center"
+        )
+        save_as_label_sec.grid(row=1, column=0, padx=10, pady=(0, 10))
+
+        # Display Video Preview Image
+        try:
+            image_path = config.VIDEO_PREVIEW_FILE
+            img = Image.open(image_path)
+            ctkImg = ctk.CTkImage(light_image=img, size=(360, 240))
+            self.previewImgLbl = ctk.CTkLabel(master=self, image=ctkImg, anchor="center", text="")
+            self.previewImgLbl.grid(row=2, column=0, padx=10, pady=10)
+            self.previewImgLbl.image = ctkImg 
+        except Exception as e:
+            pass
 
         # Save As Button
         save_as_button = ctk.CTkButton(
             master=self, text="Save As", border_width=1, border_color="#dfe6e9",
             fg_color="#6c5ce7", hover_color="#5f27cd", command=self.controller.save_as_handler
         )
-        save_as_button.grid(row=1, column=0, padx=20, pady=10)
+        save_as_button.grid(row=3, column=0, padx=10, pady=10)
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
