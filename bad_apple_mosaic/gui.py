@@ -9,6 +9,7 @@ import time
 import config
 import threading
 import multiprocessing
+import re
 
 class BadAppleApp(ctk.CTk):
     def __init__(self):
@@ -21,12 +22,17 @@ class BadAppleApp(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         # Set a fixed window size
-        self.geometry("600x500")
+        self.geometry("600x600")
         self.resizable(False, False)
 
         # Initialize attributes
         self.selected_img_path = None
         self.selected_img_extension = None
+
+        # User-selected options
+        self.input_resolution = config.DEFAULT_INPUT_RESOLUTION
+        self.output_framerate = config.DEFAULT_FRAMERATE
+        self.output_resolution = config.DEFAULT_OUTPUT_RESOLUTION
 
         # Keep a reference to the processing thread
         self.processing_thread = None
@@ -40,7 +46,7 @@ class BadAppleApp(ctk.CTk):
 
         # Set the protocol handler for window close event
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-
+        
     def show_frame(self, frame_class):
         """Bring the specified frame to the front and handle frame transitions."""
         # Create the frame if it doesn't exist
@@ -138,18 +144,24 @@ class BadAppleApp(ctk.CTk):
             enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.1)
             enhanced_img.save(os.path.join(config.UPLOAD_DIR, "gray_40x40_upload.png"), "PNG")
 
+            # Construct pixel data file path based on user selections
+            pixel_data_filename = f"pixel_data@{self.input_resolution}{self.output_framerate}.pkl"
+            pixel_data_path = os.path.join(config.PIXEL_DATA_DIR, pixel_data_filename)
+            if not os.path.exists(pixel_data_path):
+                raise FileNotFoundError(f"Pixel data file '{pixel_data_filename}' not found.")
+
             # Call video_generator functions
             start_time = time.time()
-            #print("Generating frames...")
-            video_generator.generate_frames()
-            #print("Generating video...")
+            video_generator.generate_frames(
+                pixel_data_path=pixel_data_path,
+                output_resolution=config.OUTPUT_RESOLUTION_DIMENSIONS[self.output_resolution]
+            )
             video_generator.generate_video(
                 frames_dir=config.PROCESSED_FRAMES_DIR,
-                fps=config.FRAME_RATE,
-                output_video_path=config.OUTPUT_VIDEO,
+                fps=config.FRAME_RATE_OPTIONS[self.output_framerate],
+                output_video_path=os.path.join(config.OUTPUT_VIDEO_DIR, "good_apple.mp4"),
                 audio_path=config.AUDIO_FILE
             )
-            #print(f"Process complete in {time.time() - start_time:.2f} seconds.")
 
             # After processing is done, update the GUI
             self.processing_complete()
@@ -177,7 +189,7 @@ class BadAppleApp(ctk.CTk):
 
         if save_path:
             try:
-                shutil.copyfile(config.OUTPUT_VIDEO, save_path)
+                shutil.copyfile(os.path.join(config.OUTPUT_VIDEO_DIR, "good_apple.mp4"), save_path)
             except Exception as e:
                 messagebox.showerror("Error", f"Could not save the video: {e}")
             finally:
@@ -209,48 +221,97 @@ class InitialFrame(ctk.CTkFrame):
 
         # Configure grid layout
         self.grid_columnconfigure((0, 1, 2), weight=1, uniform="col")
-        self.grid_rowconfigure((0, 2, 3, 4), weight=1, uniform="row")
+        self.grid_rowconfigure((0, 2, 3, 4, 5, 6, 7), weight=1, uniform="row")
         self.grid_rowconfigure(1, weight=3)
 
         # Title Label
         titleLbl = ctk.CTkLabel(
             master=self, text="Bad Appleify Any Image!", font=("Segoe UI", 20, "bold"), anchor="center"
         )
-        titleLbl.grid(row=0, column=0, columnspan=3, pady=10, sticky="ew")
+        titleLbl.grid(row=0, column=0, columnspan=3, pady=5, sticky="ew")
 
         # Display Image
         image_path = config.IMAGE_FILE
         img = Image.open(image_path)
         ctkImg = ctk.CTkImage(light_image=img, size=(200, 200))
         self.imgLbl = ctk.CTkLabel(master=self, image=ctkImg, anchor="center", text="")
-        self.imgLbl.grid(row=1, column=0, columnspan=3, pady=10)
+        self.imgLbl.grid(row=1, column=0, columnspan=3, pady=5)
         self.imgLbl.image = ctkImg
 
         # Select Image Button
         selectImageBtn = ctk.CTkButton(
-            master=self, text="Select Image", border_width=1, border_color="#dfe6e9",
-            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.controller.select_file_handler
+            master=self, text="Select Image", border_width=1, command=self.controller.select_file_handler
         )
-        selectImageBtn.grid(row=2, column=0, pady=10, sticky="ew")
+        selectImageBtn.grid(row=2, column=0, pady=5, sticky="ew")
 
         # File Name Label
         self.fileNameLbl = ctk.CTkLabel(
-            master=self, text="No file selected", fg_color="#636e72", anchor="w", corner_radius=5
+            master=self, text="No file selected", fg_color="#37474F", anchor="w", corner_radius=5
         )
-        self.fileNameLbl.grid(row=2, column=1, columnspan=2, pady=10, sticky="ew")
+        self.fileNameLbl.grid(row=2, column=1, columnspan=2, pady=5, sticky="ew")
+
+        # Input Resolution Option Menu
+        input_resolution_label = ctk.CTkLabel(master=self, text="Input Resolution:", anchor="w")
+        input_resolution_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+
+        self.input_resolution_var = ctk.StringVar(value=self.controller.input_resolution)
+        input_resolution_options = ["72p"]
+        input_resolution_menu = ctk.CTkOptionMenu(
+            master=self,
+            values=input_resolution_options,
+            variable=self.input_resolution_var,
+            command=self.update_input_resolution
+        )
+        input_resolution_menu.grid(row=3, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+
+        # Output Frame Rate Option Menu
+        output_framerate_label = ctk.CTkLabel(master=self, text="Output Frame Rate:", anchor="w")
+        output_framerate_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+
+        self.output_framerate_var = ctk.StringVar(value=self.controller.output_framerate)
+        output_framerate_options = ["30fps", "60fps"]
+        output_framerate_menu = ctk.CTkOptionMenu(
+            master=self,
+            values=output_framerate_options,
+            variable=self.output_framerate_var,
+            command=self.update_output_framerate
+        )
+        output_framerate_menu.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+
+        # Output Resolution Option Menu
+        output_resolution_label = ctk.CTkLabel(master=self, text="Output Resolution:", anchor="w")
+        output_resolution_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+
+        self.output_resolution_var = ctk.StringVar(value=self.controller.output_resolution)
+        output_resolution_options = ["4K"]
+        output_resolution_menu = ctk.CTkOptionMenu(
+            master=self,
+            values=output_resolution_options,
+            variable=self.output_resolution_var,
+            command=self.update_output_resolution
+        )
+        output_resolution_menu.grid(row=5, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
 
         # Image Requirements Label
         imgReqLbl = ctk.CTkLabel(
             master=self, text="*Your file must be an image file.", anchor="center"
         )
-        imgReqLbl.grid(row=3, column=0, columnspan=3, pady=10, sticky="ew")
+        imgReqLbl.grid(row=6, column=0, columnspan=3, pady=5, sticky="ew")
 
         # Upload Button
         uploadBtn = ctk.CTkButton(
-            master=self, text="Upload", border_width=1, border_color="#dfe6e9",
-            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.controller.upload_file_handler
+            master=self, text="Upload", border_width=1, command=self.controller.upload_file_handler
         )
-        uploadBtn.grid(row=4, column=0, columnspan=3, pady=10)
+        uploadBtn.grid(row=7, column=0, columnspan=3, pady=10)
+
+    def update_input_resolution(self, value):
+        self.controller.input_resolution = value
+
+    def update_output_framerate(self, value):
+        self.controller.output_framerate = value
+
+    def update_output_resolution(self, value):
+        self.controller.output_resolution = value
 
 class ProgressFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -281,8 +342,7 @@ class ProgressFrame(ctk.CTkFrame):
 
         # Cancel Button
         self.cancelBtn = ctk.CTkButton(
-            master=self, text="Cancel", border_width=1, border_color="#dfe6e9",
-            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.controller.on_closing
+            master=self, text="Cancel", border_width=1, command=self.controller.on_closing
         )
         self.cancelBtn.grid(row=3, column=0, padx=20, pady=10)
 
@@ -327,8 +387,7 @@ class SaveFrame(ctk.CTkFrame):
 
         # Save As Button
         save_as_button = ctk.CTkButton(
-            master=self, text="Save As", border_width=1, border_color="#dfe6e9",
-            fg_color="#6c5ce7", hover_color="#5f27cd", command=self.controller.save_as_handler
+            master=self, text="Save As", border_width=1, command=self.controller.save_as_handler
         )
         save_as_button.grid(row=3, column=0, padx=10, pady=10)
 

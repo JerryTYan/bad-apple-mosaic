@@ -12,67 +12,111 @@ import config
 
 executor_reference = None
 
-def load_image_as_cv_array(path):
+def load_image_as_cv_array(path, size):
     """
-    Loads an image using OpenCV and resizes it to 40x40 pixels.
+    Loads an image using OpenCV and resizes it to the specified size.
 
     Args:
         path (str): Path to the image file.
+        size (tuple): Desired size (width, height).
 
     Returns:
         np.ndarray: Resized image array.
     """
-    return cv.resize(cv.imread(path), (40, 40))
+    return cv.resize(cv.imread(path), size)
 
-def generate_frame(frame_info):
+def generate_frame(args):
     """
     Generates individual frames by overlaying user images and saves them as PNG files.
 
     Args:
-        frame_info (tuple): Frame data and pixel values.
+        args (tuple): Contains frame_info, tile_size, frame_dimensions, user_img_array, gray_user_img_array
     """
+    frame_info, tile_size, frame_dimensions, user_img_array, gray_user_img_array = args
     key, value = frame_info
-    user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, "40x40_upload.png"))
-    gray_user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, "gray_40x40_upload.png"))
-    blank_frame_array = np.zeros((2160, 2880, 3), dtype=np.uint8)
+
     output_dir = config.PROCESSED_FRAMES_DIR
 
     frame_number = f"frame_{int(key):05d}.png"
-    frame_array = blank_frame_array.copy()
+    frame_array = np.zeros((frame_dimensions[1], frame_dimensions[0], 3), dtype=np.uint8)
 
     posx, posy = 0, 0
     for pixel in value:
-        frame_array[posy:posy + 40, posx:posx + 40] = user_img_array if pixel == 1 else gray_user_img_array
-        posx += 40
-        if posx >= 2880:
+        if pixel == 1:
+            frame_array[posy:posy + tile_size[1], posx:posx + tile_size[0]] = user_img_array
+        else:
+            frame_array[posy:posy + tile_size[1], posx:posx + tile_size[0]] = gray_user_img_array
+        posx += tile_size[0]
+        if posx >= frame_dimensions[0]:
             posx = 0
-            posy += 40
-        if posy >= 2160:
+            posy += tile_size[1]
+        if posy >= frame_dimensions[1]:
             break
     cv.imwrite(os.path.join(output_dir, frame_number), frame_array, [cv.IMWRITE_PNG_COMPRESSION, 1])
 
-def generate_frames():
+def generate_frames(pixel_data_path, output_resolution):
+    """
+    Generates frames using the pixel data and user images.
+
+    Args:
+        pixel_data_path (str): Path to the pixel data .pkl file.
+        output_resolution (tuple): Output resolution (width, height).
+    """
     global executor_reference
 
     output_dir = config.PROCESSED_FRAMES_DIR
     os.makedirs(output_dir, exist_ok=True)
 
-    pixel_data_path = config.PIXEL_DATA_FILE
     with open(pixel_data_path, "rb") as file:
         pixel_data = pickle.load(file)
+
+    # Determine the number of columns and rows from the pixel data
+    sample_frame = next(iter(pixel_data.values()))
+    num_tiles = len(sample_frame)
+
+    # Assuming the pixel data represents a grid of tiles
+    # Calculate the number of columns and rows
+    num_columns = int(output_resolution[0] / 40)  # Original tile size for 72p
+    num_rows = int(output_resolution[1] / 40)
+
+    # Adjust columns and rows based on the actual number of tiles
+    total_tiles = num_columns * num_rows
+
+    if total_tiles != num_tiles:
+        # Recalculate the number of columns and rows
+        num_rows = int(num_tiles ** 0.5)
+        num_columns = num_rows  # Assuming a square grid for simplicity
+
+        # Recalculate tile sizes
+        tile_width = output_resolution[0] // num_columns
+        tile_height = output_resolution[1] // num_rows
+    else:
+        # Use the original tile size
+        tile_width = 40
+        tile_height = 40
+
+    tile_size = (tile_width, tile_height)
+    frame_dimensions = (tile_width * num_columns, tile_height * num_rows)
+
+    # Resize user images to the calculated tile size
+    user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, "40x40_upload.png"), tile_size)
+    gray_user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, "gray_40x40_upload.png"), tile_size)
 
     num_processes = max(2, int(mp.cpu_count() * 0.8))
     executor = concurrent.futures.ProcessPoolExecutor(max_workers=num_processes)
     executor_reference = executor
 
     try:
-        pool_inputs = [frame_info for frame_info in pixel_data.items()]
+        pool_inputs = [
+            (frame_info, tile_size, frame_dimensions, user_img_array, gray_user_img_array)
+            for frame_info in pixel_data.items()
+        ]
         list(executor.map(generate_frame, pool_inputs))
     finally:
         executor.shutdown(wait=True)
         executor_reference = None
 
-    # After generating frames, save frame 250 as "video_preview.png"
+    # Save frame 250 as "video_preview.png"
     frame_number = 250
     frame_filename = f"frame_{frame_number:05d}.png"
     frame_path = os.path.join(output_dir, frame_filename)
@@ -111,7 +155,7 @@ def generate_video(frames_dir, fps, output_video_path, audio_path):
         input_pattern = os.path.join(frames_dir, "frame_%05d.png")
         ffmpeg_cmd = [
             ffmpeg_exe,
-            '-y',  # Overwrite output files without asking
+            '-y', 
             '-framerate', str(fps),
             '-i', input_pattern,
             '-i', audio_path,
