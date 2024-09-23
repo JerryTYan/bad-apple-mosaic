@@ -63,9 +63,10 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+<img src="assets/process_screenshot.png" alt="I/O Process" width="700">
+<br />
 
-Bad Appleify is a creative video tool that transforms any image into a "Bad Apple" mosaic video. The project takes inspiration from the iconic "Bad Apple" video, where each frame is a mosaic made up of the user-uploaded image. The darker parts of the original video are replaced with a darkened version of the image, while the lighter parts remain as the original image. This project allows users to upload any image and convert it into a personalized mosaic video.
+Bad Appleify is a creative video tool that transforms any image into a "Bad Apple" mosaic video. The project takes inspiration from the iconic "Bad Apple" video, where each frame is a mosaic made up of the user-uploaded image. The darker parts of the original video are replaced with a darkened version of the image, while the lighter parts remain as the original image. The image above shows this process. This project allows users to upload any image and convert it into a mosaic video of "Bad Apple".
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -120,6 +121,9 @@ If you are using the executable:
 
 <!-- USAGE EXAMPLES -->
 ## Usage
+
+<img src="assets/gui_screenshot.png" alt="Product Screenshot" width="450">
+<br />
 
 To create your own Bad Apple mosaic video:
 
@@ -203,7 +207,7 @@ Project Link: [https://github.com/JerryTYan/bad-apple-mosaic](https://github.com
 [license-shield]: https://img.shields.io/github/license/JerryTYan/bad-apple-mosaic.svg?style=for-the-badge
 [license-url]: https://github.com/JerryTYan/bad-apple-mosaic/blob/main/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://www.linkedin.com/in/JerryTYan
+[linkedin-url]: https://www.linkedin.com/in/jerry-yan
 [product-screenshot]: assets/gui_screenshot.png
 
 [Python]: https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
