@@ -13,7 +13,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/JerryTYan/bad-apple-mosaic">
-    <img src="assets/badApple.png" alt="Logo" width="80" height="80" style="border-radius:50;">
+    <img src="assets/badAppleIcon.png" alt="Logo" width="80" height="80" style="border-radius:50;">
   </a>
 
 <h3 align="center">Bad Appleify</h3>
