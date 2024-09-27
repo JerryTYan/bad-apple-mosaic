@@ -66,7 +66,7 @@
   <img src="assets/process_screenshot.png" alt="I/O Process" width="700">
 </div>
 
-Bad Appleify is a creative video tool that transforms any image into a "Bad Apple" mosaic video. The project takes inspiration from the iconic "Bad Apple" video, where each frame is a mosaic made up of the user-uploaded image. The black pixels of the original video are replaced with a darkened version of the image, while the white pixels remain as the original image. The image above shows this process. This project allows users to upload any image and convert it into a mosaic video of "Bad Apple".
+Bad Appleify is a generative video tool that transforms any image into a "Bad Apple" mosaic video. The project takes inspiration from the iconic "Bad Apple" video, where each frame is a mosaic made up of the user-uploaded image. The black pixels of the original video are replaced with a darkened version of the image, while the white pixels remain as the original image. The image above shows this process. This project allows users to upload any image and convert it into a mosaic video of "Bad Apple".
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
