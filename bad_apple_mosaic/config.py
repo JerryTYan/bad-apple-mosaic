@@ -1,5 +1,6 @@
 import os
 import sys
+import multiprocessing as mp
 
 if getattr(sys, 'frozen', False):
     base_path = sys._MEIPASS
@@ -17,9 +18,11 @@ ICON_FILE = os.path.join(ASSETS_DIR, 'badApple.ico')
 IMAGE_FILE = os.path.join(ASSETS_DIR, 'badApple.png')
 PIXEL_DATA_DIR = os.path.join(base_path, 'pixel_data')
 
-DEFAULT_INPUT_RESOLUTION = '72p'
+NUM_PROCESSES = max(2, int(mp.cpu_count() * 0.7))
+
+DEFAULT_INPUT_RESOLUTION = '48p'
 DEFAULT_FRAMERATE = '30fps'
-DEFAULT_OUTPUT_RESOLUTION = '4K'
+DEFAULT_OUTPUT_RESOLUTION = '1080p'
 
 OUTPUT_RESOLUTION_DIMENSIONS = {
     '4K': (2880, 2160),

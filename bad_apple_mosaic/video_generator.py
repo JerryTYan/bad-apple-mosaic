@@ -94,7 +94,7 @@ def generate_frames(pixel_data_path, output_resolution):
     tile_width = output_resolution[0] // num_columns
     tile_height = output_resolution[1] // num_rows
     tile_size = (tile_width, tile_height)
-    min_tile_size = 20  # Minimum acceptable tile size in pixels
+    min_tile_size = 20
 
     if tile_width < min_tile_size or tile_height < min_tile_size:
         raise Exception("The calculated tile size is too small. Please select a higher output resolution or lower input resolution.")
@@ -108,8 +108,7 @@ def generate_frames(pixel_data_path, output_resolution):
     user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, "upload.png"), tile_size)
     gray_user_img_array = load_image_as_cv_array(os.path.join(config.UPLOAD_DIR, "gray_upload.png"), tile_size)
 
-    num_processes = max(2, int(mp.cpu_count() * 0.8))
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=num_processes)
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=config.NUM_PROCESSES)
     executor_reference = executor
 
     try:
