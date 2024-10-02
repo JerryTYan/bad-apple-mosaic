@@ -48,7 +48,12 @@ class BadAppleApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         
     def show_frame(self, frame_class):
-        """Bring the specified frame to the front and handle frame transitions."""
+        """
+        Displays the specified frame in the application window.
+
+        Args:
+            frame_class (class): The class of the frame to display.
+        """
         # Create the frame if it doesn't exist
         if frame_class not in self.frames:
             frame = frame_class(parent=self, controller=self)
@@ -129,6 +134,9 @@ class BadAppleApp(ctk.CTk):
         self.processing_thread.start()
 
     def process_images_and_generate_video(self):
+        """
+        Processes the user-selected image and generates the video.
+        """
         try:
             save_file_name = "upload.png"
             save_path = os.path.join(config.UPLOAD_DIR, save_file_name)
@@ -136,13 +144,10 @@ class BadAppleApp(ctk.CTk):
             img = Image.open(self.selected_img_path + self.selected_img_extension).convert("RGB")
             img.save(save_path, "PNG")
 
-            resized_img = img.resize((40, 40))
-            resized_img.save(os.path.join(config.UPLOAD_DIR, "40x40_upload.png"), "PNG")
-
-            gray_img = ImageOps.grayscale(resized_img)
+            gray_img = ImageOps.grayscale(img)
             enhanced_img = ImageEnhance.Contrast(gray_img).enhance(2.0)
             enhanced_img = ImageEnhance.Brightness(enhanced_img).enhance(0.1)
-            enhanced_img.save(os.path.join(config.UPLOAD_DIR, "gray_40x40_upload.png"), "PNG")
+            enhanced_img.save(os.path.join(config.UPLOAD_DIR, "gray_upload.png"), "PNG")
 
             # Construct pixel data file path based on user selections
             pixel_data_filename = f"pixel_data@{self.input_resolution}{self.output_framerate}.pkl"
@@ -170,9 +175,15 @@ class BadAppleApp(ctk.CTk):
             self.show_error_message(f"An unexpected error occurred: {e}")
 
     def processing_complete(self):
+        """
+        Callback function invoked when the processing is complete.
+        """
         self.after(0, self._processing_complete)
 
     def _processing_complete(self):
+        """
+        Updates the GUI after processing is complete.
+        """
         # Stop the progress bar
         progress_frame = self.frames[ProgressFrame]
         progress_frame.progress_bar.stop()
@@ -180,6 +191,9 @@ class BadAppleApp(ctk.CTk):
         self.show_frame(SaveFrame)
 
     def save_as_handler(self):
+        """
+        Handles the event when the user chooses to save the generated video.
+        """
         save_path = filedialog.asksaveasfilename(
             defaultextension=".mp4",
             filetypes=[("MP4 files", "*.mp4"), ("All files", "*.*")],
@@ -200,9 +214,18 @@ class BadAppleApp(ctk.CTk):
             pass
 
     def show_error_message(self, message):
+        """
+        Displays an error message to the user.
+
+        Args:
+            message (str): The error message to display.
+        """
         self.after(0, lambda: messagebox.showerror("Error", message))
 
     def on_closing(self):
+        """
+        Handles the event when the user attempts to close the application.
+        """
         if messagebox.askokcancel("Quit", "Do you want to cancel?"):
             try:
                 # Terminate the executor if it's running
@@ -214,8 +237,15 @@ class BadAppleApp(ctk.CTk):
                 self.destroy()
                 sys.exit(0)
 
-class InitialFrame(ctk.CTkFrame):
+class InitialFrame(ctk.CTkFrame):    
     def __init__(self, parent, controller):
+        """
+        Initializes the initial frame of the application.
+
+        Args:
+            parent (tkinter.Widget): The parent widget.
+            controller (BadAppleApp): The main application controller.
+        """
         super().__init__(parent, fg_color="transparent")
         self.controller = controller
 
@@ -255,7 +285,7 @@ class InitialFrame(ctk.CTkFrame):
         input_resolution_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         self.input_resolution_var = ctk.StringVar(value=self.controller.input_resolution)
-        input_resolution_options = ["72p"]
+        input_resolution_options = ["72p", "48p"]
         input_resolution_menu = ctk.CTkOptionMenu(
             master=self,
             values=input_resolution_options,
@@ -283,7 +313,7 @@ class InitialFrame(ctk.CTkFrame):
         output_resolution_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
 
         self.output_resolution_var = ctk.StringVar(value=self.controller.output_resolution)
-        output_resolution_options = ["4K"]
+        output_resolution_options = ["4K", "2K", "1080p"]
         output_resolution_menu = ctk.CTkOptionMenu(
             master=self,
             values=output_resolution_options,
@@ -305,16 +335,41 @@ class InitialFrame(ctk.CTkFrame):
         uploadBtn.grid(row=7, column=0, columnspan=3, pady=10)
 
     def update_input_resolution(self, value):
+        """
+        Updates the input resolution based on user selection.
+
+        Args:
+            value (str): The selected input resolution.
+        """
         self.controller.input_resolution = value
 
     def update_output_framerate(self, value):
+        """
+        Updates the output frame rate based on user selection.
+
+        Args:
+            value (str): The selected output frame rate.
+        """
         self.controller.output_framerate = value
 
     def update_output_resolution(self, value):
+        """
+        Updates the output resolution based on user selection.
+
+        Args:
+            value (str): The selected output resolution.
+        """
         self.controller.output_resolution = value
 
 class ProgressFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
+        """
+        Initializes the progress frame, which displays a progress bar during video generation.
+
+        Args:
+            parent (tkinter.Widget): The parent widget.
+            controller (BadAppleApp): The main application controller.
+        """
         super().__init__(parent, fg_color="transparent")
         self.controller = controller
 
@@ -356,6 +411,13 @@ class ProgressFrame(ctk.CTkFrame):
 
 class SaveFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
+        """
+        Initializes the save frame, which allows the user to save the generated video.
+
+        Args:
+            parent (tkinter.Widget): The parent widget.
+            controller (BadAppleApp): The main application controller.
+        """
         super().__init__(parent, fg_color="transparent")
         self.controller = controller
 

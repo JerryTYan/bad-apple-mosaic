@@ -141,7 +141,8 @@ Please note that this program is CPU intensive and may take several minutes to c
 
 - [x] User image upload functionality
 - [x] Video generation from frames
-- [ ] Adding input and output resolution options (36p & 2K, 1080p)
+- [X] Adding input and output resolution options (48p & 2K, 1080p)
+<!--I am not optimizing this shit-->
 - [ ] Improved error handling and progress feedback
 - [ ] Optimizations for larger image sizes and faster video processing
 
