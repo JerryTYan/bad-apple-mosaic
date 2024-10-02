@@ -115,7 +115,7 @@ pip install -r requirements.txt
 If you are using the executable:
 
 1. Download and run `BadAppleifyInstaller.exe`, or
-2. Unpack the source and run `BadAppleify.exe`.
+2. Unpack the zip and run `BadAppleify.exe`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

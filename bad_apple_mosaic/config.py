@@ -19,6 +19,7 @@ IMAGE_FILE = os.path.join(ASSETS_DIR, 'badApple.png')
 PIXEL_DATA_DIR = os.path.join(base_path, 'pixel_data')
 
 NUM_PROCESSES = max(2, int(mp.cpu_count() * 0.7))
+MIN_TILE_SIZE = 20
 
 DEFAULT_INPUT_RESOLUTION = '48p'
 DEFAULT_FRAMERATE = '30fps'

@@ -276,7 +276,7 @@ class InitialFrame(ctk.CTkFrame):
 
         # File Name Label
         self.fileNameLbl = ctk.CTkLabel(
-            master=self, text="No file selected", fg_color="#37474F", anchor="w", corner_radius=5
+            master=self, text="No file selected", fg_color="#708090", anchor="w", corner_radius=5
         )
         self.fileNameLbl.grid(row=2, column=1, columnspan=2, pady=5, sticky="ew")
 

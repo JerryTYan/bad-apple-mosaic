@@ -94,9 +94,8 @@ def generate_frames(pixel_data_path, output_resolution):
     tile_width = output_resolution[0] // num_columns
     tile_height = output_resolution[1] // num_rows
     tile_size = (tile_width, tile_height)
-    min_tile_size = 20
 
-    if tile_width < min_tile_size or tile_height < min_tile_size:
+    if tile_width < config.MIN_TILE_SIZE or tile_height < config.MIN_TILE_SIZE:
         raise Exception("The calculated tile size is too small. Please select a higher output resolution or lower input resolution.")
     
     adjusted_frame_dimensions = (tile_width * num_columns, tile_height * num_rows)
